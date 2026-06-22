@@ -7,7 +7,7 @@ import shutil
 from PIL import Image, ImageDraw
 
 offending_words_list = [
-    # To be clear, I'm not offending by the Lord's name, but I am offended by how it is often used.
+    # To be clear, I'm not offended by the Lord's name, but I am offended by how it is often used.
     'jesus',
     'christ',
     'goddamn',
