@@ -1,25 +1,45 @@
 # image_censor.py
 
 import os
+import re
 import pytesseract
 import shutil
 import fitz
 import glob
 
+from enum import Enum
 from PIL import Image, ImageDraw
+
+class MatchMode(Enum):
+    SUBSTR = 1
+    WHOLE = 2
+
+class OffendingWord:
+    def __init__(self, word, match_mode):
+        self.word = word
+        self.match_mode = match_mode
+    
+    def matches(self, given_word):
+        # We need to remove any punctuation or quotation that might be stuck to the word.
+        stripped_word = re.sub(r'^[^A-Za-z]+|[^A-Za-z]+$', '', given_word)
+        if self.match_mode == MatchMode.SUBSTR:
+            return self.word in stripped_word
+        elif self.match_mode == MatchMode.WHOLE:
+            return self.word == stripped_word
+        return False
 
 offending_words_list = [
     # To be clear, I'm not offended by the Lord's name, but I am offended by how it is often used.
-    'jesus',
-    'christ',
-    'goddamn',
+    OffendingWord('jesus', MatchMode.WHOLE),
+    OffendingWord('christ', MatchMode.WHOLE),
+    OffendingWord('goddamn', MatchMode.WHOLE),
 
     # Why these are offensive should be clear.
-    'fuck',
-    'shit',
-    'damn',
-    'bastard',
-    'bitch'
+    OffendingWord('fuck', MatchMode.SUBSTR),
+    OffendingWord('shit', MatchMode.SUBSTR),
+    OffendingWord('damn', MatchMode.WHOLE),
+    OffendingWord('bastard', MatchMode.SUBSTR),
+    OffendingWord('bitch', MatchMode.SUBSTR)
 ]
 
 class Box:
@@ -52,9 +72,10 @@ def process_image(image_path, make_backup):
         if len(word) == 0:
             continue
         for offending_word in offending_words_list:
-            if offending_word in word:
+            if offending_word.matches(word):
                 box = Box(x_list[i], y_list[i], w_list[i], h_list[i])
                 box_list.append(box)
+                break
 
     if len(box_list) > 0:
         print(f'Redacting {len(box_list)} word(s)...')
